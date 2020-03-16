@@ -1,0 +1,20 @@
+#version 450
+
+#extension GL_ARB_bindless_texture : require
+
+layout (local_size_x = 32) in;
+
+layout(bindless_image, rgba32f) uniform image3D data;
+
+uniform float default_value;
+
+void main() {
+    ivec3 id = clamp(ivec3(gl_GlobalInvocationID.xyz), ivec3(0), imageSize(data) - ivec3(1));
+    vec4 in_data = imageLoad(data, id).rgba;
+    if (in_data.a > 0.0f) {
+        imageStore(data, id, vec4(in_data.rgb / in_data.a, 1.0f));
+    }
+    else {
+        imageStore(data, id, vec4(default_value, default_value, default_value, 0.0f));
+    }
+}

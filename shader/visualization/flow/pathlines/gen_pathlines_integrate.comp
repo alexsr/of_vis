@@ -1,0 +1,61 @@
+#version 450
+
+#extension GL_ARB_bindless_texture : require
+
+layout (local_size_x = 32) in;
+
+struct Pathline_integrator {
+    vec4 curr_pos;
+    vec4 k1;
+    vec4 k2;
+    vec4 k3;
+};
+
+layout (std430, binding = PATHLINE_SSBO_BINDING) buffer pathline_ssbo {
+    Pathline_integrator curr_line_segment[];
+};
+
+layout (std430, binding = STREAMLINES_SSBO_BINDING) buffer lines_ssbo {
+    vec4 line[];
+};
+
+layout (std430, binding = VOLUME_GRID_BUFFER) buffer volume_grid {
+    vec4 bb_min;
+    vec4 bb_max;
+    float cell_size;
+    float cell_diag;
+};
+
+vec3 gen_3d_uv(vec3 p) {
+    return (p - vec3(bb_min)) / vec3(bb_max - bb_min);
+}
+
+layout(bindless_sampler) uniform sampler3D data;
+
+uniform int step_count;
+uniform int curr_step;
+uniform int line_count;
+uniform float step_size;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if (id >= line_count) {
+        return;
+    }
+    vec4 pos = curr_line_segment[id].curr_pos;
+    vec3 uv = gen_3d_uv(pos.xyz + curr_line_segment[id].k3.xyz);
+    vec4 vel = texture(data, uv);
+    if (vel.w < 1.0f) {
+        vel = vec4(0.0f);
+    }
+    else {
+        vel.xyz / vel.w;
+        vel.w = 0.0f;
+    }
+    pos += 1.0f / 6.0f * vec4((curr_line_segment[id].k1 +
+                               2.0f * curr_line_segment[id].k2 +
+                               2.0f * curr_line_segment[id].k3 +
+                               step_size * vel).xyz, 0.0f);
+    line[id * step_count + curr_step] = pos;
+    curr_line_segment[id].curr_pos = pos;
+}

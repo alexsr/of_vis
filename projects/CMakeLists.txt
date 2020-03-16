@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.8)
+
+add_subdirectory(preprocess)
+add_subdirectory(visualize)
+add_subdirectory(visualize_point_gaussian)
+add_subdirectory(visualize_volume_slices)
+add_subdirectory(visualize_volume_to_surface)
+add_subdirectory(visualize_volume_to_surface_with_clipping)
+add_subdirectory(boundary_volume_ray_casting)
+add_subdirectory(calc_mesh_volume)
+add_subdirectory(dist_between_meshes_tool)
